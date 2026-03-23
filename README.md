@@ -4,7 +4,7 @@ A static analysis tool for GitHub Actions workflows. Scans repositories for secu
 
 ## What It Does
 
-GHA Scanner reads your `.github/workflows/` directory and runs 28 security checks across 8 categories. It produces a scored report (A through F) with actionable remediation for every finding. No code is executed. No agents are installed. It reads YAML and tells you what is wrong.
+GHA Scanner reads your `.github/workflows/` directory and runs 25 security checks across 8 categories. It produces a scored report (A through F) with actionable remediation for every finding. No code is executed. No agents are installed. It reads YAML and tells you what is wrong.
 
 The scanner maintains a curated database of known-vulnerable actions, including the tj-actions/changed-files compromise (CVE-2025-30066), the Aqua Trivy supply chain attack (March 2026), and the Codecov bash uploader incident (CVE-2021-27027).
 
@@ -16,7 +16,7 @@ Enter any public GitHub repository (e.g., `facebook/react`) and get a full secur
 
 ## Security Checks
 
-28 checks across 8 categories:
+25 checks across 8 categories:
 
 ### Supply Chain and Action Pinning
 
@@ -104,17 +104,32 @@ Content-Type: application/json
 
 Returns a full `ScanResult` JSON object with score, grade, findings, and category breakdowns.
 
+### CLI
+
+```bash
+# Scan a repository
+GITHUB_TOKEN=ghp_your_token npx gha-scanner facebook/react
+
+# JSON output (for CI pipelines)
+GITHUB_TOKEN=ghp_your_token npx gha-scanner owner/repo --json
+
+# Markdown output (for PRs/docs)
+GITHUB_TOKEN=ghp_your_token npx gha-scanner owner/repo --markdown
+
+# Exit codes: 0 = clean, 1 = critical/high findings, 2 = error
+```
+
 ## How It Works
 
 - **YAML parsing, not code execution.** The scanner reads workflow files and parses them as structured data. No workflows are triggered or executed.
 - **Pattern matching against known-bad configurations.** Each check implements a `run` function that inspects the parsed workflow AST for specific anti-patterns, dangerous triggers, and risky permission configurations.
 - **CVE database of compromised actions.** A curated list of GitHub Actions with confirmed supply chain compromises is cross-referenced against every `uses:` declaration in your workflows.
-- **Weighted scoring model.** Findings are weighted by severity (critical: 10, high: 7, medium: 4, low: 2, info: 0) and subtracted from a base score of 100, with a floor of 0.
+- **Weighted scoring model.** Each finding contributes its severity weight (critical: 10, high: 7, medium: 4, low: 2, info: 0), capped at 3 findings per check. The score is calculated as a ratio of failed weight to maximum possible weight, producing a 0-100 score.
 - **GitHub API integration.** Fetches workflow files, Dependabot config, and CODEOWNERS via the GitHub API. Works with both authenticated and unauthenticated requests.
 
 ## Real-World Validation
 
-Scan results for well-known open-source repositories:
+Scan results for well-known open-source repositories (as of March 2026):
 
 | Repository | Grade | Score | Findings | Notable |
 |------------|-------|-------|----------|---------|

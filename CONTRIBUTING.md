@@ -1,123 +1,197 @@
-# Contributing
+# Contributing to GHA Scanner
 
-## Adding a New Check
+Thanks for your interest in improving GHA Scanner. This guide covers how to add new security checks, update the vulnerability database, run the project locally, and submit changes.
 
-The scanner is designed so that adding a new check requires minimal boilerplate. All checks live in category files under `src/lib/scanner/checks/`.
+## How to Add a New Security Check
 
-### Step by step
-
-1. Open the appropriate category file in `src/lib/scanner/checks/` (e.g., `supply-chain.ts`, `injection.ts`, `permissions.ts`).
-2. Add a new `CheckDefinition` object to the category's exported array.
-3. Implement the `run()` function that takes a `RepoContext` and returns `Finding[]`.
-4. The check is automatically registered. No changes needed in `index.ts` or anywhere else.
-5. Test against real public repositories.
-
-### Check Definition Structure
+Each check implements the `CheckDefinition` interface defined in `src/lib/scanner/types.ts`:
 
 ```typescript
 interface CheckDefinition {
-  id: string;            // Semantic ID: "category/check-name"
-  name: string;          // Human-readable name
-  description: string;   // What the check detects
-  category: Category;    // Must match the file's category
-  severity: Severity;    // critical | high | medium | low | info
+  id: string;              // Format: "category/check-name"
+  name: string;            // Human-readable name
+  description: string;     // What the check detects
+  category: Category;      // One of 8 categories (see below)
+  severity: Severity;      // 'critical' | 'high' | 'medium' | 'low' | 'info'
   run: (context: RepoContext) => Finding[];
 }
 ```
 
-Each finding returned by `run()` must include:
+Categories: `supply-chain`, `injection`, `dangerous-triggers`, `permissions`, `secrets-exposure`, `runner-security`, `ci-cd-hygiene`, `best-practices`.
+
+### Step by Step
+
+1. **Identify the right category file.** Checks live in `src/lib/scanner/checks/<category>.ts`. Pick the file that matches your check's category.
+
+2. **Add your check to the category's exported array.** The check is automatically registered because `src/lib/scanner/checks/index.ts` spreads all category arrays into `allChecks`. No manual registration needed.
+
+3. **Implement the `run` function.** It receives a `RepoContext` and returns `Finding[]`. Return an empty array if nothing is wrong.
+
+4. **Test against real repositories.** Run the scanner against repos that should trigger your check and repos that should not.
+
+### Minimal Example
 
 ```typescript
-interface Finding {
-  checkId: string;       // Same as the check's id
-  severity: Severity;    // Can differ from check default (e.g., lower for same-org actions)
-  category: Category;
-  title: string;         // One-line summary of the specific finding
-  description: string;   // What was found and where
-  risk: string;          // Why this matters, with real-world context
-  remediation: string;   // How to fix it, with code examples
-  file: string;          // Workflow file path
-  line?: number;         // Line number in the file (use findLineNumber)
-  evidence: string;      // The specific code/config that triggered the finding
-}
+// In src/lib/scanner/checks/permissions.ts
+
+{
+  id: 'permissions/id-token-write',
+  name: 'Unnecessary id-token write permission',
+  description:
+    'Detects workflows that grant id-token: write without using OIDC.',
+  category: 'permissions',
+  severity: 'medium',
+  run(context: RepoContext): Finding[] {
+    const findings: Finding[] = [];
+
+    for (const workflow of context.workflows) {
+      if (!workflow.parsed) continue;
+
+      const permissions = workflow.parsed['permissions'] as
+        | Record<string, unknown>
+        | undefined;
+      if (!permissions || permissions['id-token'] !== 'write') continue;
+
+      // Check if any step actually uses OIDC
+      const content = workflow.content;
+      if (content.includes('aws-actions/configure-aws-credentials')) continue;
+      if (content.includes('google-github-actions/auth')) continue;
+
+      findings.push({
+        checkId: 'permissions/id-token-write',
+        severity: 'medium',
+        category: 'permissions',
+        title: 'id-token: write granted but no OIDC action found',
+        description:
+          `Workflow "${workflow.name}" grants id-token: write permission but does not appear to use OIDC authentication.`,
+        risk:
+          'Granting id-token: write allows the workflow to request OIDC tokens. If unused, this is an unnecessary permission expansion that increases blast radius.',
+        remediation:
+          'Remove `id-token: write` from the permissions block if OIDC is not needed.',
+        file: workflow.path,
+        line: 1,
+        evidence: 'permissions: id-token: write',
+      });
+    }
+
+    return findings;
+  },
+},
 ```
 
-### Writing Detection Logic
+### RepoContext Reference
 
-The `RepoContext` provides:
+The `run` function receives a `RepoContext` with:
 
-- `context.workflows[]` - Array of workflow files, each with `path`, `name`, `content` (raw YAML string), and `parsed` (parsed YAML as object, or `null` if parsing failed).
-- `context.owner` / `context.repo` - Repository identifiers.
-- `context.hasDependabot` / `context.dependabotConfig` - Dependabot status and parsed config.
-- `context.hasCodeowners` / `context.codeownersContent` - CODEOWNERS status and raw content.
+- `context.workflows[]` : Array of workflow files, each with `path`, `name`, `content` (raw YAML), and `parsed` (parsed object or `null`).
+- `context.owner` / `context.repo` : Repository identifiers.
+- `context.hasDependabot` / `context.dependabotConfig` : Dependabot status and parsed config.
+- `context.defaultBranch` : The repository's default branch name.
+- `context.headSha` : The HEAD commit SHA that was scanned.
+- `context.hasCodeowners` / `context.codeownersContent` : CODEOWNERS status and content.
 
-Common patterns:
+### Tips for Writing Good Checks
 
-```typescript
-// Access parsed YAML structure
-const jobs = workflow.parsed?.jobs as Record<string, unknown>;
-
-// Search raw content for patterns
-const matches = workflow.content.match(/pattern/g);
-
-// Get line numbers for findings
-import { findLineNumber } from '../parser';
-const line = findLineNumber(workflow.content, 'search-string');
-
-// Always handle null parsed gracefully
-if (!workflow.parsed) continue;
-```
+- Always handle `workflow.parsed === null` gracefully.
+- Use `findLineNumber(content, searchString)` from `../parser` to locate the relevant line.
+- Write clear `risk` and `remediation` text. Include YAML code blocks in remediation.
+- Use semantic IDs: `category/descriptive-name`.
+- Return one `Finding` per distinct instance. Consolidate where appropriate (e.g., one finding per workflow for credential persistence, not one per step).
 
 ### Severity Guidelines
 
 | Severity | Criteria | Score Weight |
 |----------|----------|--------------|
-| critical | Directly exploitable by an external attacker with no preconditions. Enables secret theft, code execution, or full pipeline compromise. | 10 |
-| high | Exploitable with some preconditions (e.g., requires write access, specific trigger combination). Significant blast radius. | 7 |
-| medium | Best practice violation with concrete security implications. Not directly exploitable but increases attack surface or blast radius. | 4 |
-| low | Hardening recommendation. Improves security posture but absence is not directly exploitable. | 2 |
-| info | Informational observation. Does not affect the score. Useful context for security-conscious teams. | 0 |
+| critical | Directly exploitable by external attackers. Enables secret theft, code execution, or pipeline compromise. | 10 |
+| high | Exploitable with some preconditions (write access, specific trigger). Significant blast radius. | 7 |
+| medium | Concrete security implications but not directly exploitable. Increases attack surface. | 4 |
+| low | Hardening recommendation. Improves posture but absence is not directly exploitable. | 2 |
+| info | Informational. Does not affect score. Useful context for security-conscious teams. | 0 |
 
-When in doubt, err toward the higher severity. It is better to flag something the user can dismiss than to miss a real issue.
+## How to Update the Known-Vulnerable-Actions Database
 
-### Updating the CVE Database
+The CVE database lives in `src/lib/scanner/data/known-vulnerable-actions.ts`.
 
-Known vulnerable actions are tracked in `src/lib/scanner/data/known-vulnerable-actions.ts`. To add a new entry:
+To add a new entry:
 
 ```typescript
 {
-  action: 'owner/action-name',           // Full action path
-  affectedVersions: '< 2.0.0',           // Human-readable version range
-  cveId: 'CVE-YYYY-NNNNN',              // Optional, if assigned
-  disclosedDate: 'YYYY-MM-DD',           // Public disclosure date
-  fixedVersion: '2.0.0',                 // Optional, if a fix exists
-  description: 'Brief description of the vulnerability and its impact',
-}
+  action: 'owner/action-name',
+  affectedVersions: '< 2.0.0',       // Human-readable version range
+  cveId: 'CVE-2026-XXXXX',           // Optional, omit if no CVE assigned
+  disclosedDate: '2026-01-15',       // ISO date string
+  fixedVersion: '2.0.0',             // Optional, omit if no fix available
+  description:
+    'Brief description of the vulnerability and its impact.',
+},
 ```
 
-Include entries for actions with confirmed CVEs or verified supply chain compromises. Do not add entries based on unconfirmed reports.
+Guidelines:
 
-### Testing
+- Verify the CVE or advisory is confirmed before adding.
+- Include the disclosure date for timeline context.
+- If no fix exists, omit `fixedVersion`. The scanner will suggest removing or forking the action.
+- Do not add entries based on unconfirmed reports.
 
-There is no automated test suite yet. To validate a new check:
+## Running Locally
 
-1. Run the dev server: `npm run dev`
-2. Scan repositories known to have the pattern you are detecting. Good test targets:
-   - Your own repos (you know what patterns exist)
-   - Popular open source repos with many workflows
-   - Repos referenced in security advisories
-3. Verify findings are accurate: correct file, correct line, useful evidence.
-4. Check for false positives by scanning repos that should NOT trigger the check.
-5. Run `npm run build` to verify TypeScript compilation.
+```bash
+git clone https://github.com/raajheshkannaa/gha-scanner.git
+cd gha-scanner
+npm install
+npm run dev
+```
 
-## Reporting Security Issues
+The app runs at `http://localhost:3000`.
 
-If you find a security vulnerability in the scanner itself (not a check for workflows), please email security findings privately rather than opening a public issue. The scanner handles GitHub tokens and processes untrusted YAML, so vulnerabilities in the tool itself could have real impact.
+### GitHub Token (Optional but Recommended)
 
-## Code Style
+Set a `GITHUB_TOKEN` for higher API rate limits:
 
-- TypeScript, strict mode.
-- Run `npm run build` before submitting a PR to catch type errors.
-- Keep checks self-contained within their category file. Shared utilities go in `src/lib/scanner/parser.ts` or `src/lib/scanner/data/`.
-- Write remediation examples that are copy-pasteable. Include YAML code blocks showing the before/after.
-- Reference real-world incidents in risk descriptions when applicable.
+```bash
+export GITHUB_TOKEN=ghp_your_token_here
+npm run dev
+```
+
+Without a token, the GitHub API allows 60 requests per hour. With a token, 5,000.
+
+### Build and Lint
+
+```bash
+npm run build    # TypeScript compilation and Next.js build
+npm run build:cli    # Build standalone CLI (dist/cli.js)
+node dist/cli.js facebook/react   # Test CLI locally
+npm run lint     # ESLint
+```
+
+## PR Process
+
+1. **Fork the repository** and create a branch from `main`.
+2. **Make your changes.** One check or one concern per PR.
+3. **Test locally.** Scan at least 2 repositories to confirm detection works and no false positives are introduced.
+4. **Run lint and build.** Both `npm run lint` and `npm run build` must pass.
+5. **Open a pull request** with a clear title and description.
+6. **Link related issues** if applicable (e.g., "Closes #42").
+
+### What Makes a Good PR
+
+- Focused scope. Do not bundle unrelated changes.
+- Include example scan output when adding or modifying a check.
+- If fixing a false positive, include the workflow YAML that triggered it.
+
+## Code Conventions
+
+- **TypeScript strict mode.** All scanner code is TypeScript.
+- **No em dashes in user-facing text.** Use commas, periods, or rewrite sentences instead.
+- **Semantic check IDs.** Format: `category/descriptive-name` (e.g., `supply-chain/unpinned-actions`).
+- **Use `import type` for type-only imports.**
+- **Named exports only.** No default exports for check arrays.
+- **Self-contained checks.** Each check lives in its category file. Shared utilities go in `src/lib/scanner/parser.ts` or `src/lib/scanner/data/`.
+- **Copy-pasteable remediation.** Include YAML code blocks showing the corrected pattern.
+- **Reference real incidents.** When a check relates to a known attack, mention it in the risk description.
+
+## Reporting Issues
+
+- **False positives:** Use the [false positive issue template](https://github.com/raajheshkannaa/gha-scanner/issues/new?template=false-positive.md).
+- **New check proposals:** Use the [new check issue template](https://github.com/raajheshkannaa/gha-scanner/issues/new?template=new-check.md).
+- **Security vulnerabilities in the scanner itself:** Please report privately rather than opening a public issue.

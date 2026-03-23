@@ -12,7 +12,7 @@ What happened?
 
 ## Steps to Reproduce
 
-1. Go to [defensive.works](https://defensive.works) (or describe local setup)
+1. Go to [gha-scanner-app.vercel.app](https://gha-scanner-app.vercel.app) (or describe local setup)
 2. Scan repository: `owner/repo`
 3. Observe the issue
 

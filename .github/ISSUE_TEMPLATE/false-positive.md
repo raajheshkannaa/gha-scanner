@@ -1,39 +1,43 @@
 ---
 name: False Positive Report
 about: Report a finding that should not have been flagged
-title: "[False Positive] "
+title: '[FALSE POSITIVE] '
 labels: bug, false-positive
-assignees: ''
 ---
 
-## Check ID
+## Check that produced the false positive
 
-Which check produced the false positive? (e.g., `supply-chain/unpinned-actions`)
+**Check ID:** (e.g., `supply-chain/unpinned-actions`)
+**Severity reported:** (critical | high | medium | low | info)
 
-## Repository
+## Repository scanned
 
-The repository that was scanned (if public):
+Provide the repository name or a link. If the repository is private, include the relevant workflow YAML below instead.
 
-## Finding Details
-
-Paste the finding title and evidence from the scan results.
-
-**Title**:
-
-**Evidence**:
-
-## Why This Is a False Positive
-
-Explain why this finding is incorrect or should not apply in this case.
-
-## Workflow Snippet
-
-Include the relevant portion of the workflow file:
+## Workflow file that triggered the finding
 
 ```yaml
-
+# Paste the full workflow YAML or the relevant section that was flagged
 ```
 
-## Expected Behavior
+## Finding output
 
-What should the scanner do instead? (e.g., skip this pattern, reduce severity, add an exception)
+Paste or describe the finding title, description, and evidence reported by the scanner.
+
+## Why this is a false positive
+
+Explain why this finding is incorrect. For example:
+- The pattern matched is not actually vulnerable in this context
+- The check does not account for a mitigating factor present in the workflow
+- The matched string is in a comment or inactive code path
+
+## Expected behavior
+
+What should the scanner do instead? Options:
+- Skip this pattern entirely
+- Lower the severity
+- Add an exception for this specific case
+
+## Additional context
+
+Any other information that helps reproduce or understand the issue.

@@ -1,5 +1,5 @@
 {
-  "name": "defensive.works",
+  "name": "gha-scanner",
   "version": "0.1.0",
   "private": true,
   "bin": {

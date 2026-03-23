@@ -4,6 +4,14 @@ import { runScan } from './lib/scanner/engine';
 import type { ScanResult, Finding, Severity } from './lib/scanner/types';
 
 // ---------------------------------------------------------------------------
+// Input sanitization
+// ---------------------------------------------------------------------------
+
+function sanitize(s: string): string {
+  return s.replace(/[\x00-\x1f\x7f]/g, '');
+}
+
+// ---------------------------------------------------------------------------
 // ANSI color helpers (no dependencies)
 // ---------------------------------------------------------------------------
 
@@ -53,9 +61,18 @@ function parseArgs(argv: string[]): CliArgs {
     } else if (arg === '--markdown' || arg === '--md') {
       args.markdown = true;
     } else if (arg === '--token') {
-      args.token = argv[++i] ?? null;
+      if (i + 1 >= argv.length) {
+        console.error('Error: --token requires a value.');
+        process.exit(2);
+      }
+      args.token = argv[++i];
     } else if (arg.startsWith('--token=')) {
-      args.token = arg.slice('--token='.length);
+      const val = arg.slice('--token='.length).trim();
+      if (!val) {
+        console.error('Error: --token requires a non-empty value.');
+        process.exit(2);
+      }
+      args.token = val;
     } else if (!arg.startsWith('-')) {
       positional.push(arg);
     }
@@ -172,7 +189,7 @@ function formatTerminal(result: ScanResult): string {
   lines.push('');
   lines.push(`${c.dim}---${c.reset}`);
   lines.push(
-    `${c.dim}Scanned commit ${result.headSha.slice(0, 7)} on ${result.scannedAt.split('T')[0]}${c.reset}`
+    `${c.dim}Scanned commit ${(result.headSha || 'unknown').slice(0, 7)} on ${result.scannedAt.split('T')[0]}${c.reset}`
   );
   lines.push('');
 
@@ -192,7 +209,7 @@ function formatMarkdown(result: ScanResult): string {
   lines.push(`**Workflows:** ${result.workflowCount}`);
   lines.push(`**Findings:** ${result.findings.length}`);
   lines.push(`**Scan duration:** ${result.duration}ms`);
-  lines.push(`**Commit:** \`${result.headSha.slice(0, 7)}\``);
+  lines.push(`**Commit:** \`${(result.headSha || 'unknown').slice(0, 7)}\``);
   lines.push(`**Scanned at:** ${result.scannedAt}`);
   lines.push('');
 
@@ -252,7 +269,7 @@ async function main(): Promise<void> {
 
   const parsed = parseRepoInput(args.repo);
   if (!parsed) {
-    console.error(`${c.red}Error:${c.reset} Invalid repository format: ${args.repo}`);
+    console.error(`${c.red}Error:${c.reset} Invalid repository format: ${sanitize(args.repo)}`);
     console.error(`Expected: owner/repo or https://github.com/owner/repo`);
     process.exit(2);
   }

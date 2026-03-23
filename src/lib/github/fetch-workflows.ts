@@ -1,4 +1,5 @@
 import pLimit from 'p-limit';
+import { parse as parseYaml } from 'yaml';
 import type { RepoContext, WorkflowFile } from '../scanner/types';
 
 // ---------------------------------------------------------------------------
@@ -267,8 +268,7 @@ export async function fetchRepoContext(
 
       let parsed: Record<string, unknown> | null = null;
       try {
-        const yaml = await import('yaml');
-        parsed = yaml.parse(content) as Record<string, unknown>;
+        parsed = parseYaml(content) as Record<string, unknown>;
       } catch {
         parsed = null;
       }
@@ -327,8 +327,7 @@ export async function fetchRepoContext(
   let dependabotConfig: Record<string, unknown> | null = null;
   if (dependabotRaw) {
     try {
-      const yaml = await import('yaml');
-      dependabotConfig = yaml.parse(dependabotRaw) as Record<string, unknown>;
+      dependabotConfig = parseYaml(dependabotRaw) as Record<string, unknown>;
     } catch {
       dependabotConfig = null;
     }
