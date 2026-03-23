@@ -9312,7 +9312,7 @@ function runScan(context) {
 function filterSuppressed(findings, workflows) {
   const workflowLines = /* @__PURE__ */ new Map();
   for (const wf of workflows) {
-    workflowLines.set(wf.path, wf.content.split("\n"));
+    workflowLines.set(wf.path, wf.content.split(/\r?\n/));
   }
   const SUPPRESS_RE = /\s# gha-scanner-ignore:\s*(\S+)/;
   let suppressedCount = 0;

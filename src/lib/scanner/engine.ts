@@ -56,7 +56,7 @@ export function runScan(context: RepoContext): ScanResult {
 function filterSuppressed(findings: Finding[], workflows: WorkflowFile[]): { filtered: Finding[]; suppressedCount: number; suppressedChecks: string[] } {
   const workflowLines = new Map<string, string[]>();
   for (const wf of workflows) {
-    workflowLines.set(wf.path, wf.content.split('\n'));
+    workflowLines.set(wf.path, wf.content.split(/\r?\n/));
   }
 
   // Regex requires the suppression comment to appear after YAML content (not inside a string)
