@@ -7543,7 +7543,7 @@ var GitHubRateLimitError = class extends GitHubError {
 };
 var API_BASE = "https://api.github.com";
 var TIMEOUT_MS = 8e3;
-var MAX_WORKFLOWS = 20;
+var MAX_WORKFLOWS = 50;
 var RATE_LIMIT_FLOOR = 500;
 var WORKFLOW_PATH_RE = /^\.github\/workflows\/[a-zA-Z0-9_\-.]+\.ya?ml$/;
 function parseRateLimit(headers) {

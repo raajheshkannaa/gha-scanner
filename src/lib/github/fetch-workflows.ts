@@ -37,7 +37,7 @@ export class GitHubRateLimitError extends GitHubError {
 
 const API_BASE = 'https://api.github.com';
 const TIMEOUT_MS = 8_000;
-const MAX_WORKFLOWS = 20;
+const MAX_WORKFLOWS = 50;
 const RATE_LIMIT_FLOOR = 500;
 const WORKFLOW_PATH_RE = /^\.github\/workflows\/[a-zA-Z0-9_\-.]+\.ya?ml$/;
 
