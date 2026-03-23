@@ -1,4 +1,4 @@
-import { Finding, RepoContext, ScanResult, CategorySummary, CATEGORY_LABELS, Category } from './types';
+import { Finding, RepoContext, ScanResult, CategorySummary, CATEGORY_LABELS, Category, WorkflowFile } from './types';
 import { allChecks } from './checks';
 import { calculateScore } from './scoring';
 
@@ -25,8 +25,14 @@ export function runScan(context: RepoContext): ScanResult {
     }
   }
 
-  const { score, grade } = calculateScore(findings, allChecks);
-  const categories = buildCategorySummaries(findings);
+  // Filter out suppressed findings via inline comments
+  const { filtered, suppressedCount } = filterSuppressed(findings, context.workflows);
+  if (suppressedCount > 0) {
+    warnings.push(`${suppressedCount} finding(s) suppressed via inline comments.`);
+  }
+
+  const { score, grade } = calculateScore(filtered, allChecks);
+  const categories = buildCategorySummaries(filtered);
   const duration = Date.now() - startTime;
 
   return {
@@ -39,12 +45,43 @@ export function runScan(context: RepoContext): ScanResult {
     grade,
     totalChecks: allChecks.length,
     passingChecks,
-    findings,
+    findings: filtered,
     categories,
     workflowCount: context.workflows.length,
     partial: hasParseFailures,
     warnings,
   };
+}
+
+function filterSuppressed(findings: Finding[], workflows: WorkflowFile[]): { filtered: Finding[]; suppressedCount: number } {
+  const workflowLines = new Map<string, string[]>();
+  for (const wf of workflows) {
+    workflowLines.set(wf.path, wf.content.split('\n'));
+  }
+
+  let suppressedCount = 0;
+  const filtered = findings.filter(f => {
+    if (!f.line) return true; // Can't suppress without a line number
+    const lines = workflowLines.get(f.file);
+    if (!lines) return true;
+
+    // Check the finding line and the line above for suppression comment
+    const checkLines = [lines[f.line - 1], lines[f.line - 2]].filter(Boolean);
+    for (const line of checkLines) {
+      const match = line.match(/# gha-scanner-ignore(?::?\s*(.+))?/);
+      if (match) {
+        const specifiedCheck = match[1]?.trim();
+        // If no specific check, suppress everything. If specific, match check ID.
+        if (!specifiedCheck || specifiedCheck === f.checkId) {
+          suppressedCount++;
+          return false;
+        }
+      }
+    }
+    return true;
+  });
+
+  return { filtered, suppressedCount };
 }
 
 function buildCategorySummaries(findings: Finding[]): CategorySummary[] {

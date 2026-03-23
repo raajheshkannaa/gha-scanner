@@ -1,0 +1,14 @@
+name: 'GHA Scanner'
+description: 'Scan GitHub Actions workflows for security vulnerabilities'
+inputs:
+  token:
+    description: 'GitHub token for API access'
+    required: false
+    default: ${{ github.token }}
+  fail-on:
+    description: 'Fail the action if findings at this severity or above are found (critical, high, medium, low, none)'
+    required: false
+    default: 'high'
+runs:
+  using: 'node20'
+  main: 'dist/action.js'

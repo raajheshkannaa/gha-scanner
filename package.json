@@ -9,8 +9,11 @@
     "dev": "next dev",
     "build": "next build",
     "build:cli": "npx esbuild src/cli.ts --bundle --platform=node --target=node18 --outfile=dist/cli.js --format=cjs --banner:js='#!/usr/bin/env node'",
+    "build:action": "npx esbuild src/action.ts --bundle --platform=node --target=node20 --outfile=dist/action.js --format=cjs",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@upstash/ratelimit": "^2.0.8",
@@ -31,6 +34,7 @@
     "eslint-config-next": "^15.5.14",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.1"
   }
 }
