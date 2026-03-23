@@ -1,101 +1,59 @@
-import Image from "next/image";
+import { ScanForm } from '@/components/scanner/ScanForm';
+import { Shield, AlertTriangle, Lock, Eye, Server, Settings, CheckCircle, GitBranch } from 'lucide-react';
+
+const categories = [
+  { icon: GitBranch, name: 'Supply Chain', desc: 'Unpinned actions, mutable tags, known CVEs', color: 'text-red-400' },
+  { icon: AlertTriangle, name: 'Injection', desc: 'Expression injection in run blocks', color: 'text-orange-400' },
+  { icon: Shield, name: 'Dangerous Triggers', desc: 'pull_request_target misuse', color: 'text-yellow-400' },
+  { icon: Lock, name: 'Permissions', desc: 'Overly broad GITHUB_TOKEN scope', color: 'text-blue-400' },
+  { icon: Eye, name: 'Secrets Exposure', desc: 'Leaked secrets in logs and artifacts', color: 'text-purple-400' },
+  { icon: Server, name: 'Runner Security', desc: 'Self-hosted runner risks', color: 'text-pink-400' },
+  { icon: Settings, name: 'CI/CD Hygiene', desc: 'Timeouts, concurrency, error handling', color: 'text-cyan-400' },
+  { icon: CheckCircle, name: 'Best Practices', desc: 'Dependabot, CODEOWNERS', color: 'text-emerald-400' },
+];
 
 export default function Home() {
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <div className="max-w-5xl mx-auto px-4 py-16">
+      {/* Hero */}
+      <div className="text-center mb-12">
+        <h1 className="text-4xl md:text-5xl font-bold mb-4">
+          Is your GitHub Actions pipeline{' '}
+          <span className="text-emerald-400">secure</span>?
+        </h1>
+        <p className="text-lg text-slate-400 max-w-2xl mx-auto mb-8">
+          Scan any public repository for 28 security checks across 8 categories.
+          Get a detailed report with specific remediation steps. Free, instant, no sign-up required.
+        </p>
+      </div>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+      {/* Scan Form */}
+      <div className="max-w-2xl mx-auto mb-16">
+        <ScanForm />
+      </div>
+
+      {/* What We Check */}
+      <div className="mb-16">
+        <h2 className="text-2xl font-semibold text-center mb-8">What we check</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {categories.map((cat) => (
+            <div
+              key={cat.name}
+              className="bg-slate-900 border border-slate-800 rounded-lg p-4 hover:border-slate-700 transition-colors"
+            >
+              <cat.icon className={`w-5 h-5 ${cat.color} mb-2`} />
+              <h3 className="font-medium mb-1">{cat.name}</h3>
+              <p className="text-sm text-slate-400">{cat.desc}</p>
+            </div>
+          ))}
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </div>
+
+      {/* Trust indicators */}
+      <div className="text-center text-sm text-slate-500">
+        <p>28 checks inspired by real attacks: tj-actions (2025), Trivy (2026), Shai Hulud, GhostAction</p>
+        <p className="mt-1">No data stored. No sign-up. Open source scanner engine.</p>
+      </div>
     </div>
   );
 }
