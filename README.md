@@ -40,11 +40,14 @@ cd gha-scanner && npm install && npm run build:cli
 GITHUB_TOKEN=ghp_xxx node dist/cli.js owner/repo
 ```
 
-**Claude Code skill:**
+**Claude Code skill** (add to any repo):
+```bash
+# Copy the skill to your project
+mkdir -p .claude/skills
+curl -o .claude/skills/gha-scan.md \
+  https://raw.githubusercontent.com/raajheshkannaa/gha-scanner/main/.claude/skills/gha-scan.md
 ```
-/gha-scan
-```
-Scans workflow files in your current project. Catches issues as you write them, before commit.
+Then use `/gha-scan` in Claude Code. Scans workflow files as you write them, before commit.
 
 **API:**
 ```bash
