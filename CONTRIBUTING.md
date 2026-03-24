@@ -89,6 +89,7 @@ The `run` function receives a `RepoContext` with:
 - `context.defaultBranch` : The repository's default branch name.
 - `context.headSha` : The HEAD commit SHA that was scanned.
 - `context.hasCodeowners` / `context.codeownersContent` : CODEOWNERS status and content.
+- `context.parseWarnings` : Array of parse error messages from workflow files that failed to parse.
 
 ### Tips for Writing Good Checks
 
