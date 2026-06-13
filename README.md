@@ -9,6 +9,8 @@ Static analysis for GitHub Actions workflows. Finds security misconfigurations, 
 
 **[Try it now: scan.defensive.works](https://scan.defensive.works)**
 
+> Want one attack walkthrough, one detection, and one defender move every Tuesday? **[Subscribe to Weekly Recon](https://defensive.works/recon/)** — the newsletter from the same author, covering cloud, agents, CI/CD, and supply-chain security.
+
 ![GHA Scanner results page showing a graded security report with findings grouped by category](https://github.com/raajheshkannaa/gha-scanner/raw/main/docs/assets/screenshot.png)
 
 ## Inspired by Real Attacks
