@@ -1,3 +1,5 @@
+> **Retired (Nov 2026).** This project is no longer maintained and is archived for reference. Thanks to everyone who tried it. More of my work: https://defensive.works
+
 # GHA Scanner
 
 [![CI](https://github.com/raajheshkannaa/gha-scanner/actions/workflows/ci.yml/badge.svg)](https://github.com/raajheshkannaa/gha-scanner/actions/workflows/ci.yml)
